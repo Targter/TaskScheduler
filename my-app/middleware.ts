@@ -23,7 +23,7 @@ export default withAuth(
   {
     callbacks: {
       authorized: () => true,
-    },
+    },git 
   }
 );
 
