@@ -3,19 +3,15 @@ import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { NextResponse } from "next/server";
 
-// 1. Disable Body Parsing (QStash needs raw body for signature verification)
-// Next.js App Router handles this automatically, but we use the helper below.
-
 async function handler(req: Request) {
-  // 2. Parse Payload
   const body = await req.json();
   const { taskId } = body;
 
-  if (!taskId) return new NextResponse("No Task ID", { status: 400 });
+  if (!taskId) return new NextResponse("Missing Task ID", { status: 400 });
 
-  console.log(`👷 Worker started for Task: ${taskId}`);
+  console.log(`🚀 Worker waking up for Task: ${taskId}`);
 
-  // 3. Fetch Task & Tokens
+  // 1. Fetch Task
   const task = await prisma.task.findUnique({
     where: { id: taskId },
     include: {
@@ -25,12 +21,12 @@ async function handler(req: Request) {
     },
   });
 
-  // Idempotency Check: If already done, stop.
-  if (!task || task.status === "COMPLETED") {
-    return new NextResponse("Task already completed or missing", { status: 200 });
+  // Idempotency: Don't run if already done or failed
+  if (!task || task.status === "COMPLETED" || task.status === "FAILED") {
+    return new NextResponse("Task already processed", { status: 200 });
   }
 
-  // 4. Find Twitter Account
+  // 2. Find Twitter Credentials
   const twitterAccount = task.user.platformAccounts.find(
     (acc) => acc.platform === "TWITTER"
   );
@@ -40,10 +36,10 @@ async function handler(req: Request) {
         where: { id: taskId },
         data: { status: "FAILED" }
     });
-    return new NextResponse("No Twitter Account", { status: 400 });
+    return new NextResponse("No connected Twitter account", { status: 400 });
   }
 
-  // 5. Execute Post
+  // 3. Post to Twitter
   try {
     const accessToken = decrypt(twitterAccount.encryptedAccessToken);
 
@@ -57,11 +53,13 @@ async function handler(req: Request) {
     });
 
     if (!response.ok) {
+        // Parse error to see if it's a "Duplicate Content" error or Auth error
         const errData = await response.json();
-        throw new Error(JSON.stringify(errData));
+        console.error("Twitter API Error:", errData);
+        throw new Error("Twitter refused the post");
     }
 
-    // 6. Success!
+    // 4. Mark Success
     await prisma.task.update({
       where: { id: taskId },
       data: {
@@ -75,17 +73,22 @@ async function handler(req: Request) {
       },
     });
 
-    console.log(`✅ Tweet Sent for Task ${taskId}`);
-    return new NextResponse("Success", { status: 200 });
+    return new NextResponse("Tweet Sent Successfully", { status: 200 });
 
-  } catch (error: any) {
-    console.error(`❌ Worker Failed:`, error);
+  } catch (error) {
+    console.error("Worker Execution Failed:", error);
     
+    // Mark as Failed in DB
+    await prisma.task.update({
+        where: { id: taskId },
+        data: { status: "FAILED" }
+    });
 
-    return new NextResponse(error.message, { status: 500 });
+    // Return 500 so QStash knows to retry (if you want automatic retries)
+    // Or return 200 to stop QStash from retrying if you think it's a permanent error
+    return new NextResponse("Worker Error", { status: 500 });
   }
 }
 
-// 7. Apply Security Wrapper
-// This ensures ONLY QStash can call this API. Hackers cannot trigger it.
+// Security: Verify request comes from QStash
 export const POST = verifySignatureAppRouter(handler);

@@ -106,7 +106,7 @@ export default function QuickPost({
 
     // --- CALL SERVER ACTION HERE ---
     await scheduleTask(formData);
-
+    
     // Simulate API delay
     await new Promise((r) => setTimeout(r, 1000));
 
