@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Twitter,
-  Linkedin,
-  Plus,
-  CheckCircle2,
-  AlertCircle,
-} from "lucide-react";
+import { Twitter, Linkedin, Plus, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
 interface Props {

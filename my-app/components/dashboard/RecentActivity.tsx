@@ -1,10 +1,4 @@
-import {
-  CalendarClock,
-  Twitter,
-  Linkedin,
-  MessageCircle,
-  AlertCircle,
-} from "lucide-react";
+import { CalendarClock, Twitter, Linkedin, MessageCircle } from "lucide-react";
 
 // Helper to render the correct icon based on data
 // Note: You might need to adjust logic based on how you store execution data
