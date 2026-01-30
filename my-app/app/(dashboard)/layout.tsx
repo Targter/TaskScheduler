@@ -1,9 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth"; // Your auth config
 import { redirect } from "next/navigation";
-// import Sidebar from "@/components/dashboard/Sidebar";
-import Sidebar from "../components/dashboard/sidebar";
-// import Sidebar from "./sidebar";
+import Sidebar from "@/components/sidebar";
 import { DashboardProvider } from "./provider";
 
 export default async function DashboardLayout({

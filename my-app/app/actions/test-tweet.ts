@@ -22,7 +22,7 @@ export async function sendTestTweet() {
 
   // 2. Decrypt the Token
   const accessToken = decrypt(account.encryptedAccessToken);
-
+console.log("accessToken:",accessToken)
   // 3. Call Twitter API
   try {
     const response = await fetch("https://api.twitter.com/2/tweets", {
@@ -35,7 +35,7 @@ export async function sendTestTweet() {
         text: `Hello World! Testing my Schedulr app via API. Time: ${new Date().toLocaleTimeString()}`,
       }),
     });
-
+    console.log("response:",response)
     const data = await response.json();
 
     if (!response.ok) {

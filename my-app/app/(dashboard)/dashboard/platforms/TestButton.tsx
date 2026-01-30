@@ -1,3 +1,4 @@
+// client comp
 "use client";
 
 import { sendTestTweet } from "@/app/actions/test-tweet";
@@ -37,8 +38,10 @@ export default function TestTweetButton({
     <div className="flex items-center gap-2">
       <button
         onClick={handleTest}
-        disabled={status === "LOADING"}
-        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg flex items-center gap-2 transition"
+        disabled={true}
+        // disabled={status === "LOADING"}
+        title="Test Button Disabled"
+        className="px-3 py-1.5 bg-red-600 hover:bg-red-800 text-white text-xs font-bold rounded-lg flex items-center gap-2 transition cursor-pointer"
       >
         {status === "LOADING" ? (
           <Loader2 className="w-3 h-3 animate-spin" />
@@ -53,7 +56,7 @@ export default function TestTweetButton({
           ? "Sent!"
           : status === "ERROR"
             ? "Failed"
-            : "Send Test Tweet"}
+            : "Send Test Tweet button disabled..."}
       </button>
       {status === "ERROR" && (
         <span className="text-xs text-red-400">{msg}</span>

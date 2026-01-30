@@ -22,6 +22,7 @@ const navItems = [
 
 export default function Sidebar({ user }: { user: any }) {
   const pathname = usePathname();
+  // console.log("user:Image", user.image);
 
   return (
     <div className="w-64 bg-zinc-950 border-r border-white/10 flex-col hidden md:flex h-screen fixed left-0 top-0">
@@ -75,10 +76,9 @@ export default function Sidebar({ user }: { user: any }) {
           className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 w-full hover:bg-red-900/10 rounded-lg transition"
         >
           <LogOut className="w-4 h-4" />
-          // Sign Out
+          Sign Out
         </button>
       </div>
-      //{" "}
     </div>
   );
 }

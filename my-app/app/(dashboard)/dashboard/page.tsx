@@ -1,4 +1,9 @@
-import DashboardPage from "@/app/components/dashboard/DashBoardViewer";
+// this is server comp
+// all necessary data fetch from the server only.
+// result not api call direct connection
+// hence the client will not interfere with the data.
+
+import DashboardPage from "@/components/dashboard/DashBoardViewer";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -47,6 +52,7 @@ export default async function Dashboard() {
   const isLinkedinConnected = connectedAccounts.some(
     (a) => a.platform === "LINKEDIN",
   );
+  // console.log("user:", session.user);
 
   return (
     <DashboardPage
