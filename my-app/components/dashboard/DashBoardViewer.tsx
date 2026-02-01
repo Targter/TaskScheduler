@@ -81,7 +81,7 @@ export default function DashboardViewer({
         {/* RIGHT: Sidebar */}
 
         <div className="lg:col-span-4 space-y-4 sticky top-6">
-          <ConnectionStatus isX={isXConnected} isLi={isLinkedinConnected} />
+          <ConnectionStatus isX={isXConnected} isLi={isLinkedinConnected} isIns={isInstagramConnected}/>
 
           <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-5 relative overflow-hidden group">
             <div className="relative z-10">
