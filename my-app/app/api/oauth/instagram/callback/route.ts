@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
   const code = searchParams.get("code");
   const error = searchParams.get("error");
 
+  console.log("auth Code: ",code)
   // Handle cancellation or missing code
   if (error || !code) {
     console.error("Instagram OAuth Error:", error || "No code provided");
