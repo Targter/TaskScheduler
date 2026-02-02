@@ -192,14 +192,13 @@
 // export const POST = verifySignatureAppRouter(handler);
 
 
+
 import { verifySignatureAppRouter } from "@upstash/qstash/dist/nextjs";
 import { prisma } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { NextResponse } from "next/server";
 
 // --- Helper: Upload Media to Twitter (v1.1) ---
-// Note: Twitter Media Upload is still v1.1. 
-// We use the OAuth 2.0 Bearer Token here.
 async function uploadMediaToTwitter(accessToken: string, imageUrl: string) {
   try {
     console.log(`📥 Downloading image for X: ${imageUrl}`);
@@ -207,11 +206,19 @@ async function uploadMediaToTwitter(accessToken: string, imageUrl: string) {
     // 1. Download Image from UploadThing
     const imageRes = await fetch(imageUrl);
     if (!imageRes.ok) throw new Error(`Failed to download image: ${imageUrl}`);
-    const imageBlob = await imageRes.blob();
+    
+    // Get the Content-Type to ensure we give it the right extension if possible
+    const contentType = imageRes.headers.get("content-type") || "image/jpeg";
+    const blob = await imageRes.blob();
 
     // 2. Prepare FormData
     const formData = new FormData();
-    formData.append("media", imageBlob);
+    
+    // 🚨 CRITICAL FIX: Twitter REJECTS uploads without a filename in the metadata.
+    // We explicitly add "image.jpg" (or derived name) as the 3rd argument.
+    const filename = contentType.includes("png") ? "upload.png" : "upload.jpg";
+    formData.append("media", blob, filename); 
+    
     formData.append("media_category", "tweet_image");
 
     // 3. Upload to Twitter v1.1 Endpoint
@@ -219,18 +226,26 @@ async function uploadMediaToTwitter(accessToken: string, imageUrl: string) {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        // Do NOT set Content-Type manually for FormData; fetch handles boundary automatically
+        // Note: Do NOT set "Content-Type" manually here. fetch/FormData sets the boundary.
       },
       body: formData,
     });
 
     if (!uploadRes.ok) {
       const errText = await uploadRes.text();
-      throw new Error(`Twitter Media Upload Failed: ${errText}`);
+      // Try to parse JSON error if possible for better logs
+      try {
+        const errJson = JSON.parse(errText);
+        throw new Error(JSON.stringify(errJson));
+      } catch {
+        throw new Error(errText);
+      }
     }
 
     const data = await uploadRes.json();
-    // Return the media_id_string (using string to avoid BigInt precision issues)
+    console.log(`✅ Uploaded to X. Media ID: ${data.media_id_string}`);
+    
+    // Always use string version of ID for JS precision
     return data.media_id_string;
 
   } catch (error) {
@@ -247,7 +262,7 @@ async function handler(req: Request) {
 
   console.log(`🚀 X (Twitter) Worker waking up for Task: ${taskId}`);
 
-  // 1. Fetch Task with User & Executions
+  // 1. Fetch Task
   const task = await prisma.task.findUnique({
     where: { id: taskId },
     include: {
@@ -260,20 +275,20 @@ async function handler(req: Request) {
 
   if (!task) return new NextResponse("Task not found", { status: 404 });
 
-  // 2. Identify the specific Execution for Twitter
+  // 2. Identify Execution
   const execution = task.executions.find((e) => e.platform === "TWITTER");
 
   if (!execution || execution.status === "SUCCESS") {
     return new NextResponse("Already processed", { status: 200 });
   }
 
-  // 3. Mark as RUNNING
+  // 3. Mark RUNNING
   await prisma.taskExecution.update({
     where: { id: execution.id },
     data: { status: "RUNNING", startedAt: new Date() },
   });
 
-  // 4. Find Twitter Account
+  // 4. Find Account
   let twitterAccount = task.user.platformAccounts.find(
     (acc) => acc.platform === "TWITTER"
   );
@@ -287,13 +302,12 @@ async function handler(req: Request) {
   }
 
   // ============================================================
-  // 🔄 AUTO-REFRESH LOGIC
+  // 🔄 AUTO-REFRESH TOKEN
   // ============================================================
   
   let accessToken = decrypt(twitterAccount.encryptedAccessToken);
   const now = new Date();
   
-  // Refresh if expired or expiring within 5 mins
   const isExpired = twitterAccount.expiresAt && twitterAccount.expiresAt < new Date(now.getTime() + 5 * 60000);
 
   if (isExpired) {
@@ -335,53 +349,59 @@ async function handler(req: Request) {
   }
 
   // ============================================================
-  // 📸 MEDIA PROCESSING & POSTING
+  // 📸 PROCESS & POST
   // ============================================================
 
   try {
     // --- 1. Parse Image URLs ---
+    // Handles task.mediaUrl (string) OR task.mediaUrls (array/json) depending on your schema
     let imageUrls: string[] = [];
 
+    // Check 'mediaUrl' (singular) field
     if (task.mediaUrls) {
-      if (Array.isArray(task.mediaUrls)) {
-        imageUrls = task.mediaUrls as string[];
-      } else if (typeof task.mediaUrls === "string") {
-        try {
-          const parsed = JSON.parse(task.mediaUrls);
-          if (Array.isArray(parsed)) imageUrls = parsed;
-          else imageUrls = [task.mediaUrls];
-        } catch {
-          imageUrls = [task.mediaUrls];
+        if (Array.isArray(task.mediaUrls)) imageUrls = task.mediaUrls as string[];
+        else if (typeof task.mediaUrls === "string") {
+            try {
+                const parsed = JSON.parse(task.mediaUrls);
+                imageUrls = Array.isArray(parsed) ? parsed : [task.mediaUrls];
+            } catch {
+                imageUrls = [task.mediaUrls];
+            }
         }
-      }
+    }
+    // Check 'mediaUrls' (plural) field just in case schema changed
+    else if ((task as any).mediaUrls) {
+        const m = (task as any).mediaUrls;
+        if (Array.isArray(m)) imageUrls = m;
+        else if (typeof m === "string") {
+            try { imageUrls = JSON.parse(m); } catch { imageUrls = [m]; }
+        }
     }
 
-    // --- 2. Upload Images (if any) ---
+    // --- 2. Upload Images ---
     const mediaIds: string[] = [];
     
     if (imageUrls.length > 0) {
-      // Twitter allows up to 4 images
-      const imagesToUpload = imageUrls.slice(0, 4); 
+      const imagesToUpload = imageUrls.slice(0, 4); // Max 4
       console.log(`📸 Uploading ${imagesToUpload.length} images to X...`);
 
-      // Upload sequentially or parallel (Parallel is fine for media upload)
-      const uploadedIds = await Promise.all(
-        imagesToUpload.map(url => uploadMediaToTwitter(accessToken, url))
-      );
-      
-      mediaIds.push(...uploadedIds);
+      // Upload one by one to avoid rate limits or weird async FormData issues
+      for (const url of imagesToUpload) {
+          const id = await uploadMediaToTwitter(accessToken, url);
+          if (id) mediaIds.push(id);
+      }
     }
 
-    // --- 3. Construct Payload ---
+    // --- 3. Construct Tweet ---
     const tweetPayload: any = {
-      text: task.content || "", // Twitter requires text, or at least empty string if media is present
+      text: task.content || "", 
     };
 
     if (mediaIds.length > 0) {
       tweetPayload.media = { media_ids: mediaIds };
     }
 
-    // --- 4. Post Tweet (v2) ---
+    // --- 4. Send Tweet ---
     const response = await fetch("https://api.twitter.com/2/tweets", {
       method: "POST",
       headers: {
@@ -431,7 +451,6 @@ async function handler(req: Request) {
 // --- Helper: Refresh Twitter Token ---
 async function refreshTwitterToken(refreshToken: string) {
     const url = "https://api.twitter.com/2/oauth2/token";
-    
     const basicAuth = Buffer.from(
         `${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`
     ).toString("base64");
