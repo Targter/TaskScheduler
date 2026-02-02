@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     // ------------------------------------------------------------------
     // 2. Exchange Code for Short-Lived Access Token (Valid ~1 hour)
     // ------------------------------------------------------------------
-    const tokenUrl = `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${process.env.NEXT_PUBLIC_URL}/api/oauth/instagram/callback&client_secret=${process.env.FACEBOOK_APP_SECRET}&code=${code}`;
+    const tokenUrl = `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${process.env.NEXTAUTH_URL}/api/oauth/instagram/callback&client_secret=${process.env.FACEBOOK_APP_SECRET}&code=${code}`;
     
     const tokenRes = await fetch(tokenUrl);
     const tokenData = await tokenRes.json();
