@@ -1,148 +1,93 @@
+import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
 import { redirect } from "next/navigation";
 import { NextRequest } from "next/server";
-import { requireUser } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
-  const user = await requireUser(); // 1. Verify User
+  const user = await requireUser();
+  const code = req.nextUrl.searchParams.get("code");
 
-  const { searchParams } = new URL(req.url);
-  const code = searchParams.get("code");
-  const error = searchParams.get("error");
-
-  if (error || !code) {
-    return new Response(`OAuth Error: ${error || "No code provided"}`, { status: 400 });
-  }
-
-  const clientId = process.env.META_CLIENT_ID!;
-  const clientSecret = process.env.META_CLIENT_SECRET!;
-  const redirectUri = `${process.env.NEXTAUTH_URL}/api/oauth/whatsapp/callback`;
+  if (!code) return redirect("/dashboard?error=no_code");
 
   try {
-    // ---------------------------------------------------------
-    // 2. Exchange Code for Short-Lived Access Token
-    // ---------------------------------------------------------
-    const tokenUrl = new URL("https://graph.facebook.com/v20.0/oauth/access_token");
-    tokenUrl.searchParams.append("client_id", clientId);
-    tokenUrl.searchParams.append("client_secret", clientSecret);
-    tokenUrl.searchParams.append("redirect_uri", redirectUri);
-    tokenUrl.searchParams.append("code", code);
-
-    const tokenResponse = await fetch(tokenUrl.toString(), { method: "GET" });
-    const tokenData = await tokenResponse.json();
-
-    if (!tokenResponse.ok) {
-      console.error("Meta Token Error:", tokenData);
-      return new Response("Failed to fetch tokens from Meta", { status: 400 });
-    }
-
-    let accessToken = tokenData.access_token;
-    let expiresIn = tokenData.expires_in;
-
-    // ---------------------------------------------------------
-    // 3. Exchange Short-Lived Token for Long-Lived Token (60 Days)
-    // ---------------------------------------------------------
-    const longLivedUrl = new URL("https://graph.facebook.com/v20.0/oauth/access_token");
-    longLivedUrl.searchParams.append("grant_type", "fb_exchange_token");
-    longLivedUrl.searchParams.append("client_id", clientId);
-    longLivedUrl.searchParams.append("client_secret", clientSecret);
-    longLivedUrl.searchParams.append("fb_exchange_token", accessToken);
-
-    const longLivedResponse = await fetch(longLivedUrl.toString(), { method: "GET" });
-    const longLivedData = await longLivedResponse.json();
-
-    if (longLivedResponse.ok && longLivedData.access_token) {
-      accessToken = longLivedData.access_token;
-      expiresIn = longLivedData.expires_in || 5184000; // ~60 days
-    }
-
-    // ---------------------------------------------------------
-    // 4. [NEW] Fetch WABA ID (WhatsApp Business Account ID)
-    // ---------------------------------------------------------
-    // We inspect the token to find which Business Account it belongs to.
-    const debugUrl = new URL("https://graph.facebook.com/v20.0/debug_token");
-    debugUrl.searchParams.append("input_token", accessToken);
-    debugUrl.searchParams.append("access_token", `${clientId}|${clientSecret}`); // App Token
-
-    const debugRes = await fetch(debugUrl.toString(), { method: "GET" });
-    const debugData = await debugRes.json();
-
-    // Look for 'whatsapp_business_management' scope to find the WABA ID
-    const wabaScope = debugData.data?.granular_scopes?.find(
-      (scope: any) => scope.scope === "whatsapp_business_management"
-    );
-    const wabaId = wabaScope?.target_ids?.[0];
-
-    if (!wabaId) {
-      throw new Error("Could not find WhatsApp Business Account ID (WABA) in token scopes.");
-    }
-
-    // ---------------------------------------------------------
-    // 5. [NEW] Fetch Phone Number ID
-    // ---------------------------------------------------------
-    // Now we ask the WABA for its registered phone numbers.
-    const phoneRes = await fetch(
-      `https://graph.facebook.com/v20.0/${wabaId}/phone_numbers?access_token=${accessToken}`
-    );
-    const phoneData = await phoneRes.json();
+    // 1. Exchange Code for Access Token
+    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${process.env.NEXTAUTH_URL}/api/oauth/whatsapp/callback&client_secret=${process.env.FACEBOOK_APP_SECRET}&code=${code}`;
+    const tokenRes = await fetch(tokenUrl);
+    const tokenData = await tokenRes.json();
     
-    // We select the first phone number found.
-    const phoneNumberId = phoneData.data?.[0]?.id;
+    if (tokenData.error) throw new Error(tokenData.error.message);
+    const accessToken = tokenData.access_token;
 
+    // 2. Fetch WhatsApp Business Accounts (WABA)
+    const wabaUrl = `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`;
+    // Note: Usually we fetch Businesses, but for Cloud API we often query phone numbers directly via the WABA ID.
+    // Let's try fetching the user's granular scopes or IDs.
+    
+    // Easier Method: Get the Business Account ID first
+    const meRes = await fetch(`https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${accessToken}`);
+    const meData = await meRes.json();
+
+    // 3. Find Phone Numbers
+    // We need to find a WABA ID first. This is tricky with standard scopes. 
+    // We will attempt to get businesses.
+    const businessesRes = await fetch(`https://graph.facebook.com/v18.0/me/businesses?access_token=${accessToken}`);
+    const businessesData = await businessesRes.json();
+
+    let phoneNumberId = null;
+    let phoneNumberName = "WhatsApp";
+
+    // Loop through businesses to find a phone number
+    if (businessesData.data && businessesData.data.length > 0) {
+        const businessId = businessesData.data[0].id;
+        
+        // Fetch Phone Numbers for this Business
+        const phonesRes = await fetch(`https://graph.facebook.com/v18.0/${businessId}/phone_numbers?access_token=${accessToken}`);
+        const phonesData = await phonesRes.json();
+
+        if (phonesData.data && phonesData.data.length > 0) {
+            phoneNumberId = phonesData.data[0].id;
+            phoneNumberName = phonesData.data[0].display_phone_number;
+        }
+    }
+
+    // FALLBACK: If above fails (permissions issue), user might need to input ID manually in settings.
+    // But for now, let's assume we found it or fail gracefully.
+    
     if (!phoneNumberId) {
-      throw new Error("No phone number found associated with this WhatsApp Business Account.");
+        // For MVP, if we can't auto-discover, we might redirect to a manual entry page.
+        // But let's try to error out for now.
+        console.error("No WhatsApp Number Found", businessesData);
+        return redirect("/dashboard/connections?error=no_whatsapp_number");
     }
 
-    // ---------------------------------------------------------
-    // 6. Fetch User's Meta/Facebook ID (For externalId)
-    // ---------------------------------------------------------
-    const userResponse = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${accessToken}`);
-    const userData = await userResponse.json();
-
-    if (!userData.id) {
-      return new Response("Failed to fetch Meta user data", { status: 400 });
-    }
-
-    const metaUserId = userData.id;
-
-    // ---------------------------------------------------------
-    // 7. Encrypt & Save to DB
-    // ---------------------------------------------------------
+    // 4. Save to DB
     await prisma.platformAccount.upsert({
       where: {
         platform_externalId: {
           platform: "WHATSAPP",
-          externalId: metaUserId,
+          externalId: phoneNumberId,
         },
       },
       update: {
+        // name: `${phoneNumberName} (WA)`,
         encryptedAccessToken: encrypt(accessToken),
-        
-        // WORKAROUND: Storing Phone Number ID in the unused Refresh Token field
-        // because your schema does not have a phoneNumberId column.
-        encryptedRefreshToken: encrypt(phoneNumberId), 
-        
-        expiresAt: new Date(Date.now() + expiresIn * 1000),
+        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
       },
       create: {
         userId: user.id,
         platform: "WHATSAPP",
-        externalId: metaUserId,
-        
+        externalId: phoneNumberId,
+        // name: `${phoneNumberName} (WA)`,
         encryptedAccessToken: encrypt(accessToken),
-        // WORKAROUND: Storing Phone Number ID here
-        encryptedRefreshToken: encrypt(phoneNumberId), 
-        
-        expiresAt: new Date(Date.now() + expiresIn * 1000),
+        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
       },
     });
 
   } catch (error) {
-    console.error("WhatsApp Callback Error:", error);
-    return new Response("Internal Server Error during WhatsApp OAuth", { status: 500 });
+    console.error("WhatsApp OAuth Error:", error);
+    return redirect("/dashboard/connections?error=whatsapp_failed");
   }
 
-  // 8. Success! Back to connections page
-  return redirect("/dashboard?success=true");
+  return redirect("/dashboard/connections?success=whatsapp");
 }

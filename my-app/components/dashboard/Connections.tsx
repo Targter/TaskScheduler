@@ -3,8 +3,8 @@
 import {
   Twitter,
   Linkedin,
-  Instagram,
-  MessageCircle,
+  // Instagram,
+  // MessageCircle,
   Plus,
   ExternalLink,
   AlertCircle,
@@ -16,15 +16,15 @@ import Link from "next/link";
 interface ConnectionStatusProps {
   isX: boolean;
   isLi: boolean;
-  isIns: boolean;
-  isWhatsApp: boolean;
+  // isIns: boolean;
+  // isWhatsApp: boolean;
 }
 
 export default function ConnectionStatus({
   isX,
   isLi,
-  isIns,
-  isWhatsApp,
+  // isIns,
+  // isWhatsApp,
 }: ConnectionStatusProps) {
   // Calculate total connected for status message
   const connectedCount = [isX, isLi].filter(Boolean).length;
@@ -71,7 +71,7 @@ export default function ConnectionStatus({
           bgTint="bg-[#0077b5] border-transparent"
           connectLink="/api/oauth/linkedin"
         />
-        <AccountRow
+        {/* <AccountRow
           platform="WhatsApp"
           isConnected={isWhatsApp}
           icon={<MessageCircle size={14} />}
@@ -86,7 +86,7 @@ export default function ConnectionStatus({
           themeColor="text-white"
           bgTint="bg-[#0077b5] border-transparent"
           connectLink="/api/oauth/instagram"
-        />
+        /> */}
       </div>
 
       {/* Footer / Global Status */}

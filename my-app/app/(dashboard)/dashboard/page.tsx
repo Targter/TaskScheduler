@@ -119,12 +119,12 @@ export default async function Dashboard() {
   const isLinkedinConnected = connectedAccounts.some(
     (a) => a.platform === "LINKEDIN",
   );
-  const isInstagramConnected = connectedAccounts.some(
-    (a) => a.platform === "INSTAGRAM",
-  );
-  const isWhatsAppConnected = connectedAccounts.some(
-    (a) => a.platform === "WHATSAPP",
-  );
+  // const isInstagramConnected = connectedAccounts.some(
+  //   (a) => a.platform === "INSTAGRAM",
+  // );
+  // const isWhatsAppConnected = connectedAccounts.some(
+  //   (a) => a.platform === "WHATSAPP",
+  // );
   const usageCount = Number(usageCountRaw ?? 0);
 
   console.log("usageCountRaw page.tsx", usageCountRaw);
@@ -136,9 +136,9 @@ export default async function Dashboard() {
       sentCount={sentCount}
       upcomingPosts={upcomingPosts}
       isXConnected={isXConnected}
-      isInstagramConnected={isInstagramConnected}
+      // isInstagramConnected={isInstagramConnected}
       isLinkedinConnected={isLinkedinConnected}
-      isWhatsAppConnected={isWhatsAppConnected}
+      // isWhatsAppConnected={isWhatsAppConnected}
       usageCount={usageCount || 0}
       isPro={false}
     />

@@ -34,19 +34,20 @@ const AVAILABLE_PLATFORMS = [
     connectUrl: "/dashboard/connections",
     status: "LIVE",
   },
-  {
-    id: "WHATSAPP",
-    name: "WhatsApp",
-    description: "Broadcast to Channels and contact lists.",
-    icon: MessageCircle,
-    color: "bg-[#25D366]/10 text-[#25D366] border-[#25D366]/20",
-    connectUrl: "#",
-    status: "BETA",
-  },
+  // {
+  //   id: "WHATSAPP",
+  //   name: "WhatsApp",
+  //   description: "Broadcast to Channels and contact lists.",
+  //   icon: MessageCircle,
+  //   color: "bg-[#25D366]/10 text-[#25D366] border-[#25D366]/20",
+  //   connectUrl: "#",
+  //   status: "BETA",
+  // },
 ];
 
 const COMING_SOON = [
   { name: "Instagram", icon: Instagram },
+  { name: "WhatsApp", icon: MessageCircle },
   { name: "Facebook", icon: Facebook },
   { name: "TikTok", icon: Globe },
 ];

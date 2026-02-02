@@ -13,17 +13,19 @@ export default function DashboardViewer({
   sentCount,
   upcomingPosts,
   isXConnected,
-  isLinkedinConnected,
-  isInstagramConnected,
-  isWhatsAppConnected,
   usageCount,
+  isLinkedinConnected,
   isPro,
 }: any) {
-  const hasConnections =
-    isXConnected ||
-    isLinkedinConnected ||
-    isInstagramConnected ||
-    isWhatsAppConnected;
+  // isInstagramConnected,
+  // isWhatsAppConnected,
+  // const hasConnections =
+  //   isXConnected ||
+  //   isLinkedinConnected ||
+  //   isInstagramConnected ||
+  //   isWhatsAppConnected;
+
+  const hasConnections = isXConnected || isLinkedinConnected;
 
   return (
     <div className="max-w-6xl mx-auto  p-4 md:p-1  transition-all">
@@ -65,7 +67,7 @@ export default function DashboardViewer({
           <QuickPost
             isXConnected={isXConnected}
             isLinkedinConnected={isLinkedinConnected}
-            isInstagramConnected={isInstagramConnected}
+            // isInstagramConnected={isInstagramConnected}
             userImage={user?.image}
             usageCount={usageCount}
             isPro={isPro}
@@ -88,8 +90,8 @@ export default function DashboardViewer({
           <ConnectionStatus
             isX={isXConnected}
             isLi={isLinkedinConnected}
-            isIns={isInstagramConnected}
-            isWhatsApp={isWhatsAppConnected}
+            // isIns={isInstagramConnected}
+            // isWhatsApp={isWhatsAppConnected}
           />
 
           <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-5 relative overflow-hidden group">
