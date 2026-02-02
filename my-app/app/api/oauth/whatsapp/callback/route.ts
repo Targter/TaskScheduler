@@ -20,7 +20,9 @@ export async function GET(req: NextRequest) {
   const redirectUri = `${process.env.NEXTAUTH_URL}/api/oauth/whatsapp/callback`;
 
   try {
+    // ---------------------------------------------------------
     // 2. Exchange Code for Short-Lived Access Token
+    // ---------------------------------------------------------
     const tokenUrl = new URL("https://graph.facebook.com/v20.0/oauth/access_token");
     tokenUrl.searchParams.append("client_id", clientId);
     tokenUrl.searchParams.append("client_secret", clientSecret);
@@ -36,10 +38,11 @@ export async function GET(req: NextRequest) {
     }
 
     let accessToken = tokenData.access_token;
-    let expiresIn = tokenData.expires_in; // Usually 3600 seconds (1 hour)
+    let expiresIn = tokenData.expires_in;
 
+    // ---------------------------------------------------------
     // 3. Exchange Short-Lived Token for Long-Lived Token (60 Days)
-    // Meta doesn't use "offline.access" like Twitter; they use token exchange.
+    // ---------------------------------------------------------
     const longLivedUrl = new URL("https://graph.facebook.com/v20.0/oauth/access_token");
     longLivedUrl.searchParams.append("grant_type", "fb_exchange_token");
     longLivedUrl.searchParams.append("client_id", clientId);
@@ -54,7 +57,46 @@ export async function GET(req: NextRequest) {
       expiresIn = longLivedData.expires_in || 5184000; // ~60 days
     }
 
-    // 4. Fetch User's Meta/Facebook ID (For externalId)
+    // ---------------------------------------------------------
+    // 4. [NEW] Fetch WABA ID (WhatsApp Business Account ID)
+    // ---------------------------------------------------------
+    // We inspect the token to find which Business Account it belongs to.
+    const debugUrl = new URL("https://graph.facebook.com/v20.0/debug_token");
+    debugUrl.searchParams.append("input_token", accessToken);
+    debugUrl.searchParams.append("access_token", `${clientId}|${clientSecret}`); // App Token
+
+    const debugRes = await fetch(debugUrl.toString(), { method: "GET" });
+    const debugData = await debugRes.json();
+
+    // Look for 'whatsapp_business_management' scope to find the WABA ID
+    const wabaScope = debugData.data?.granular_scopes?.find(
+      (scope: any) => scope.scope === "whatsapp_business_management"
+    );
+    const wabaId = wabaScope?.target_ids?.[0];
+
+    if (!wabaId) {
+      throw new Error("Could not find WhatsApp Business Account ID (WABA) in token scopes.");
+    }
+
+    // ---------------------------------------------------------
+    // 5. [NEW] Fetch Phone Number ID
+    // ---------------------------------------------------------
+    // Now we ask the WABA for its registered phone numbers.
+    const phoneRes = await fetch(
+      `https://graph.facebook.com/v20.0/${wabaId}/phone_numbers?access_token=${accessToken}`
+    );
+    const phoneData = await phoneRes.json();
+    
+    // We select the first phone number found.
+    const phoneNumberId = phoneData.data?.[0]?.id;
+
+    if (!phoneNumberId) {
+      throw new Error("No phone number found associated with this WhatsApp Business Account.");
+    }
+
+    // ---------------------------------------------------------
+    // 6. Fetch User's Meta/Facebook ID (For externalId)
+    // ---------------------------------------------------------
     const userResponse = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${accessToken}`);
     const userData = await userResponse.json();
 
@@ -64,37 +106,43 @@ export async function GET(req: NextRequest) {
 
     const metaUserId = userData.id;
 
-    // 5. Encrypt & Save to DB
-    // Note: Meta does not typically provide a 'refresh_token'. 
-    // You must re-auth or rotate the Long-Lived token before 60 days.
+    // ---------------------------------------------------------
+    // 7. Encrypt & Save to DB
+    // ---------------------------------------------------------
     await prisma.platformAccount.upsert({
       where: {
         platform_externalId: {
-          platform: "WHATSAPP", // Ensure this enum exists in your Prisma Schema
+          platform: "WHATSAPP",
           externalId: metaUserId,
         },
       },
       update: {
         encryptedAccessToken: encrypt(accessToken),
-        // Meta doesn't usually send a refresh token, so we set null or keep existing
-        encryptedRefreshToken: null, 
+        
+        // WORKAROUND: Storing Phone Number ID in the unused Refresh Token field
+        // because your schema does not have a phoneNumberId column.
+        encryptedRefreshToken: encrypt(phoneNumberId), 
+        
         expiresAt: new Date(Date.now() + expiresIn * 1000),
       },
       create: {
         userId: user.id,
         platform: "WHATSAPP",
         externalId: metaUserId,
+        
         encryptedAccessToken: encrypt(accessToken),
-        encryptedRefreshToken: null,
+        // WORKAROUND: Storing Phone Number ID here
+        encryptedRefreshToken: encrypt(phoneNumberId), 
+        
         expiresAt: new Date(Date.now() + expiresIn * 1000),
       },
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("WhatsApp Callback Error:", error);
     return new Response("Internal Server Error during WhatsApp OAuth", { status: 500 });
   }
 
-  // 6. Success! Back to connections page
+  // 8. Success! Back to connections page
   return redirect("/dashboard?success=true");
 }
