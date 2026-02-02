@@ -4,6 +4,7 @@ import {
   Twitter,
   Linkedin,
   Instagram,
+  MessageCircle,
   Plus,
   ExternalLink,
   AlertCircle,
@@ -16,12 +17,14 @@ interface ConnectionStatusProps {
   isX: boolean;
   isLi: boolean;
   isIns: boolean;
+  isWhatsApp: boolean;
 }
 
 export default function ConnectionStatus({
   isX,
   isLi,
   isIns,
+  isWhatsApp,
 }: ConnectionStatusProps) {
   // Calculate total connected for status message
   const connectedCount = [isX, isLi].filter(Boolean).length;
@@ -68,7 +71,14 @@ export default function ConnectionStatus({
           bgTint="bg-[#0077b5] border-transparent"
           connectLink="/api/oauth/linkedin"
         />
-
+        <AccountRow
+          platform="WhatsApp"
+          isConnected={isWhatsApp}
+          icon={<MessageCircle size={14} />}
+          themeColor="text-white"
+          bgTint="bg-[#0077b5] border-transparent"
+          connectLink="/api/oauth/whatsapp"
+        />
         <AccountRow
           platform="Instagram"
           isConnected={isIns}

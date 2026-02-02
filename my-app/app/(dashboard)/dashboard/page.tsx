@@ -122,6 +122,9 @@ export default async function Dashboard() {
   const isInstagramConnected = connectedAccounts.some(
     (a) => a.platform === "INSTAGRAM",
   );
+  const isWhatsAppConnected = connectedAccounts.some(
+    (a) => a.platform === "WHATSAPP",
+  );
   const usageCount = Number(usageCountRaw ?? 0);
 
   console.log("usageCountRaw page.tsx", usageCountRaw);
@@ -135,6 +138,7 @@ export default async function Dashboard() {
       isXConnected={isXConnected}
       isInstagramConnected={isInstagramConnected}
       isLinkedinConnected={isLinkedinConnected}
+      isWhatsAppConnected={isWhatsAppConnected}
       usageCount={usageCount || 0}
       isPro={false}
     />

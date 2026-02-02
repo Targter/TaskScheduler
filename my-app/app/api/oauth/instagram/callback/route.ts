@@ -151,6 +151,7 @@ export async function GET(req: NextRequest) {
 
     // 3. Get Pages
     const pagesUrl = `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}&fields=id,name,instagram_business_account`;
+    
     const pagesRes = await fetch(pagesUrl);
     const pagesData = await pagesRes.json();
 
