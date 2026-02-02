@@ -1,9 +1,243 @@
 
 
+// import { verifySignatureAppRouter } from "@upstash/qstash/dist/nextjs";
+// import { prisma } from "@/lib/db";
+// import { decrypt, encrypt } from "@/lib/crypto"; // <--- IMPORT ENCRYPT
+// import { NextResponse } from "next/server";
+
+// async function handler(req: Request) {
+//   const body = await req.json();
+//   const { taskId } = body;
+
+//   if (!taskId) return new NextResponse("Missing Task ID", { status: 400 });
+
+//   console.log(`🚀 Worker waking up for Task: ${taskId}`);
+
+//   // 1. Fetch Task with User & Executions
+//   const task = await prisma.task.findUnique({
+//     where: { id: taskId },
+//     include: {
+//       user: {
+//         include: { platformAccounts: true },
+//       },
+//       executions: true,
+//     },
+//   });
+
+//   if (!task) return new NextResponse("Task not found", { status: 404 });
+
+//   // 2. Identify the specific Execution for Twitter
+//   const execution = task.executions.find((e) => e.platform === "TWITTER");
+
+//   // If already done, stop
+//   if (!execution || execution.status === "SUCCESS") {
+//     return new NextResponse("Already processed", { status: 200 });
+//   }
+
+//   // 3. Mark as RUNNING
+//   await prisma.taskExecution.update({
+//     where: { id: execution.id },
+//     data: { status: "RUNNING", startedAt: new Date() },
+//   });
+
+//   // 4. Find Twitter Account
+//   let twitterAccount = task.user.platformAccounts.find(
+//     (acc) => acc.platform === "TWITTER"
+//   );
+
+//   if (!twitterAccount) {
+//     await prisma.taskExecution.update({
+//         where: { id: execution.id },
+//         data: { status: "FAILED", error: "No Connected Account" }
+//     });
+//     return new NextResponse("No connected Twitter account", { status: 200 });
+//   }
+
+//   // ============================================================
+//   // 🔄 AUTO-REFRESH LOGIC START
+//   // ============================================================
+  
+//   let accessToken = decrypt(twitterAccount.encryptedAccessToken);
+//   const now = new Date();
+  
+//   // Check if token is expired (or expires in the next 5 minutes)
+//   const isExpired = twitterAccount.expiresAt && twitterAccount.expiresAt < new Date(now.getTime() + 5 * 60000);
+
+//   if (isExpired) {
+//     console.log("⏳ Access Token expired. Refreshing with Twitter...");
+    
+//     try {
+//         if (!twitterAccount.encryptedRefreshToken) {
+//             throw new Error("No refresh token available");
+//         }
+
+//         const refreshToken = decrypt(twitterAccount.encryptedRefreshToken);
+        
+//         // Call Helper Function (defined at bottom)
+//         const newCredentials = await refreshTwitterToken(refreshToken);
+
+//         // Update Database with NEW tokens
+//         // Twitter rotates refresh tokens, so we must save the new one too.
+//         twitterAccount = await prisma.platformAccount.update({
+//             where: { id: twitterAccount.id },
+//             data: {
+//                 encryptedAccessToken: encrypt(newCredentials.access_token),
+//                 encryptedRefreshToken: encrypt(newCredentials.refresh_token),
+//                 expiresAt: new Date(Date.now() + newCredentials.expires_in * 1000),
+//             }
+//         });
+
+//         // Update the variable to use the NEW access token for the post below
+//         accessToken = newCredentials.access_token;
+//         console.log("✅ Token refreshed & saved.");
+
+//     } catch (refreshError: any) {
+//         console.error("Token Refresh Failed:", refreshError);
+        
+//         await prisma.taskExecution.update({
+//             where: { id: execution.id },
+//             data: { 
+//                 status: "FAILED", 
+//                 error: "Connection expired. Please reconnect Twitter.",
+//                 finishedAt: new Date() 
+//             }
+//         });
+//         // We return 200 so QStash stops retrying. The user MUST reconnect manually.
+//         return new NextResponse("Token Refresh Failed", { status: 200 });
+//     }
+//   }
+//   // ============================================================
+//   // 🔄 AUTO-REFRESH LOGIC END
+//   // ============================================================
+
+//   // 5. Post to Twitter
+//   try {
+//     const response = await fetch("https://api.twitter.com/2/tweets", {
+//       method: "POST",
+//       headers: {
+//         Authorization: `Bearer ${accessToken}`,
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({ text: task.content }),
+//     });
+
+//     if (!response.ok) {
+//         const errData = await response.json();
+//         console.error("Twitter API Error:", errData);
+//         throw new Error(JSON.stringify(errData));
+//     }
+
+//     // 6. Success Transaction
+//     await prisma.$transaction([
+//         prisma.taskExecution.update({
+//             where: { id: execution.id },
+//             data: { status: "SUCCESS", finishedAt: new Date() }
+//         }),
+//         prisma.task.update({
+//             where: { id: taskId },
+//             data: { status: "COMPLETED" }
+//         })
+//     ]);
+
+//     return new NextResponse("Tweet Sent Successfully", { status: 200 });
+
+//   } catch (error: any) {
+//     console.error("Worker Execution Failed:", error);
+    
+//     await prisma.taskExecution.update({
+//         where: { id: execution.id },
+//         data: { status: "FAILED", error: error.message || "Unknown Error", finishedAt: new Date() }
+//     });
+
+//     await prisma.task.update({
+//         where: { id: taskId },
+//         data: { status: "FAILED" }
+//     });
+
+//     return new NextResponse("Worker Processed (Failed)", { status: 200 });
+//   }
+// }
+
+// // --- Helper Function to Call Twitter API ---
+// async function refreshTwitterToken(refreshToken: string) {
+//     const url = "https://api.twitter.com/2/oauth2/token";
+    
+//     // Twitter requires Basic Auth with Client ID & Secret for refreshing
+//     const basicAuth = Buffer.from(
+//         `${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`
+//     ).toString("base64");
+
+//     const params = new URLSearchParams({
+//         grant_type: "refresh_token",
+//         refresh_token: refreshToken,
+//     });
+
+//     const res = await fetch(url, {
+//         method: "POST",
+//         headers: {
+//             "Content-Type": "application/x-www-form-urlencoded",
+//             "Authorization": `Basic ${basicAuth}`,
+//         },
+//         body: params,
+//     });
+
+//     if (!res.ok) {
+//         const text = await res.text();
+//         throw new Error(`Twitter Refresh Error: ${text}`);
+//     }
+
+//     return await res.json();
+// }
+
+// export const POST = verifySignatureAppRouter(handler);
+
+
 import { verifySignatureAppRouter } from "@upstash/qstash/dist/nextjs";
 import { prisma } from "@/lib/db";
-import { decrypt, encrypt } from "@/lib/crypto"; // <--- IMPORT ENCRYPT
+import { decrypt, encrypt } from "@/lib/crypto";
 import { NextResponse } from "next/server";
+
+// --- Helper: Upload Media to Twitter (v1.1) ---
+// Note: Twitter Media Upload is still v1.1. 
+// We use the OAuth 2.0 Bearer Token here.
+async function uploadMediaToTwitter(accessToken: string, imageUrl: string) {
+  try {
+    console.log(`📥 Downloading image for X: ${imageUrl}`);
+
+    // 1. Download Image from UploadThing
+    const imageRes = await fetch(imageUrl);
+    if (!imageRes.ok) throw new Error(`Failed to download image: ${imageUrl}`);
+    const imageBlob = await imageRes.blob();
+
+    // 2. Prepare FormData
+    const formData = new FormData();
+    formData.append("media", imageBlob);
+    formData.append("media_category", "tweet_image");
+
+    // 3. Upload to Twitter v1.1 Endpoint
+    const uploadRes = await fetch("https://upload.twitter.com/1.1/media/upload.json", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        // Do NOT set Content-Type manually for FormData; fetch handles boundary automatically
+      },
+      body: formData,
+    });
+
+    if (!uploadRes.ok) {
+      const errText = await uploadRes.text();
+      throw new Error(`Twitter Media Upload Failed: ${errText}`);
+    }
+
+    const data = await uploadRes.json();
+    // Return the media_id_string (using string to avoid BigInt precision issues)
+    return data.media_id_string;
+
+  } catch (error) {
+    console.error("X Media Upload Error:", error);
+    throw error;
+  }
+}
 
 async function handler(req: Request) {
   const body = await req.json();
@@ -11,7 +245,7 @@ async function handler(req: Request) {
 
   if (!taskId) return new NextResponse("Missing Task ID", { status: 400 });
 
-  console.log(`🚀 Worker waking up for Task: ${taskId}`);
+  console.log(`🚀 X (Twitter) Worker waking up for Task: ${taskId}`);
 
   // 1. Fetch Task with User & Executions
   const task = await prisma.task.findUnique({
@@ -29,7 +263,6 @@ async function handler(req: Request) {
   // 2. Identify the specific Execution for Twitter
   const execution = task.executions.find((e) => e.platform === "TWITTER");
 
-  // If already done, stop
   if (!execution || execution.status === "SUCCESS") {
     return new NextResponse("Already processed", { status: 200 });
   }
@@ -54,30 +287,26 @@ async function handler(req: Request) {
   }
 
   // ============================================================
-  // 🔄 AUTO-REFRESH LOGIC START
+  // 🔄 AUTO-REFRESH LOGIC
   // ============================================================
   
   let accessToken = decrypt(twitterAccount.encryptedAccessToken);
   const now = new Date();
   
-  // Check if token is expired (or expires in the next 5 minutes)
+  // Refresh if expired or expiring within 5 mins
   const isExpired = twitterAccount.expiresAt && twitterAccount.expiresAt < new Date(now.getTime() + 5 * 60000);
 
   if (isExpired) {
     console.log("⏳ Access Token expired. Refreshing with Twitter...");
-    
     try {
         if (!twitterAccount.encryptedRefreshToken) {
             throw new Error("No refresh token available");
         }
 
         const refreshToken = decrypt(twitterAccount.encryptedRefreshToken);
-        
-        // Call Helper Function (defined at bottom)
         const newCredentials = await refreshTwitterToken(refreshToken);
 
-        // Update Database with NEW tokens
-        // Twitter rotates refresh tokens, so we must save the new one too.
+        // Update DB
         twitterAccount = await prisma.platformAccount.update({
             where: { id: twitterAccount.id },
             data: {
@@ -87,7 +316,6 @@ async function handler(req: Request) {
             }
         });
 
-        // Update the variable to use the NEW access token for the post below
         accessToken = newCredentials.access_token;
         console.log("✅ Token refreshed & saved.");
 
@@ -102,32 +330,74 @@ async function handler(req: Request) {
                 finishedAt: new Date() 
             }
         });
-        // We return 200 so QStash stops retrying. The user MUST reconnect manually.
         return new NextResponse("Token Refresh Failed", { status: 200 });
     }
   }
+
   // ============================================================
-  // 🔄 AUTO-REFRESH LOGIC END
+  // 📸 MEDIA PROCESSING & POSTING
   // ============================================================
 
-  // 5. Post to Twitter
   try {
+    // --- 1. Parse Image URLs ---
+    let imageUrls: string[] = [];
+
+    if (task.mediaUrls) {
+      if (Array.isArray(task.mediaUrls)) {
+        imageUrls = task.mediaUrls as string[];
+      } else if (typeof task.mediaUrls === "string") {
+        try {
+          const parsed = JSON.parse(task.mediaUrls);
+          if (Array.isArray(parsed)) imageUrls = parsed;
+          else imageUrls = [task.mediaUrls];
+        } catch {
+          imageUrls = [task.mediaUrls];
+        }
+      }
+    }
+
+    // --- 2. Upload Images (if any) ---
+    const mediaIds: string[] = [];
+    
+    if (imageUrls.length > 0) {
+      // Twitter allows up to 4 images
+      const imagesToUpload = imageUrls.slice(0, 4); 
+      console.log(`📸 Uploading ${imagesToUpload.length} images to X...`);
+
+      // Upload sequentially or parallel (Parallel is fine for media upload)
+      const uploadedIds = await Promise.all(
+        imagesToUpload.map(url => uploadMediaToTwitter(accessToken, url))
+      );
+      
+      mediaIds.push(...uploadedIds);
+    }
+
+    // --- 3. Construct Payload ---
+    const tweetPayload: any = {
+      text: task.content || "", // Twitter requires text, or at least empty string if media is present
+    };
+
+    if (mediaIds.length > 0) {
+      tweetPayload.media = { media_ids: mediaIds };
+    }
+
+    // --- 4. Post Tweet (v2) ---
     const response = await fetch("https://api.twitter.com/2/tweets", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ text: task.content }),
+      body: JSON.stringify(tweetPayload),
     });
 
     if (!response.ok) {
         const errData = await response.json();
-        console.error("Twitter API Error:", errData);
-        throw new Error(JSON.stringify(errData));
+        console.error("Twitter API Error:", JSON.stringify(errData, null, 2));
+        throw new Error(errData.detail || errData.title || "Twitter API Failed");
     }
 
-    // 6. Success Transaction
+    // --- 5. Success ---
     await prisma.$transaction([
         prisma.taskExecution.update({
             where: { id: execution.id },
@@ -158,11 +428,10 @@ async function handler(req: Request) {
   }
 }
 
-// --- Helper Function to Call Twitter API ---
+// --- Helper: Refresh Twitter Token ---
 async function refreshTwitterToken(refreshToken: string) {
     const url = "https://api.twitter.com/2/oauth2/token";
     
-    // Twitter requires Basic Auth with Client ID & Secret for refreshing
     const basicAuth = Buffer.from(
         `${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`
     ).toString("base64");
