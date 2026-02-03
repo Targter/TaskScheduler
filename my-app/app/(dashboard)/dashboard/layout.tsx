@@ -22,8 +22,8 @@ export default async function DashboardLayout({
   // const usageCount = (await redis.get<number>(redisKey)) || 0;
   // console.log("usageCount:layout:", usageCount);
 
-  const twitterKey = `user:${session.user.id}:usage:TWITTER`;
-  const linkedinKey = `user:${session.user.id}:usage:LINKEDIN`;
+  const twitterKey = `user:${session.user.id}:quota:TWITTER`;
+  const linkedinKey = `user:${session.user.id}:quota:LINKEDIN`;
 
   const [twitterUsage, linkedinUsage] = await Promise.all([
     redis.get<number>(twitterKey),

@@ -13,7 +13,7 @@ export default function DashboardViewer({
   sentCount,
   upcomingPosts,
   isXConnected,
-  usageCount,
+  // usageCount,
   isLinkedinConnected,
   isPro,
 }: any) {
@@ -69,7 +69,7 @@ export default function DashboardViewer({
             isLinkedinConnected={isLinkedinConnected}
             // isInstagramConnected={isInstagramConnected}
             userImage={user?.image}
-            usageCount={usageCount}
+            // usageCount={usageCount}
             isPro={isPro}
           />
 

@@ -324,12 +324,12 @@ export async function scheduleTask(formData: FormData) {
     
     console.log("Quotas updated successfully");
 
-    
+
     // --- FIX END ---
     
     console.log("Quota increased successfully");
 
-    revalidatePath("/dashboard");
+    revalidatePath("/dashboard","page");
     return { success: true };
 
   } catch (error: any) {

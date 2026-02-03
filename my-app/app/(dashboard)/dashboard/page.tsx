@@ -72,7 +72,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 
-export const dynamic = "force-dynamic";
+// export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
@@ -81,10 +81,10 @@ export default async function Dashboard() {
     redirect("/login");
   }
   // const redisKey = `user:${session.user.id}:post`;
-  const redisKey = `user:cmku0afme0000c8oayci13wfd:post`;
+  // const redisKey = `user:cmku0afme0000c8oayci13wfd:post`;
 
   const [
-    usageCountRaw,
+    // usageCountRaw,
     postsCount,
     sentCount,
     upcomingPosts,
@@ -93,7 +93,7 @@ export default async function Dashboard() {
     // Total Scheduled/Pending
 
     // redis.get<number>(redisKey),
-    redis.get(redisKey),
+    // redis.get(redisKey),
     prisma.task.count({
       where: { userId: session.user.id, status: "PENDING" },
     }),
@@ -125,10 +125,10 @@ export default async function Dashboard() {
   // const isWhatsAppConnected = connectedAccounts.some(
   //   (a) => a.platform === "WHATSAPP",
   // );
-  const usageCount = Number(usageCountRaw ?? 0);
+  // const usageCount = Number(usageCountRaw ?? 0);
 
-  console.log("usageCountRaw page.tsx", usageCountRaw);
-  console.log("usagecount:", usageCount);
+  // console.log("usageCountRaw page.tsx", usageCountRaw);
+  // console.log("usagecount:", usageCount);
   return (
     <DashboardPage
       user={session.user}
@@ -139,7 +139,7 @@ export default async function Dashboard() {
       // isInstagramConnected={isInstagramConnected}
       isLinkedinConnected={isLinkedinConnected}
       // isWhatsAppConnected={isWhatsAppConnected}
-      usageCount={usageCount || 0}
+      // usageCount={usageCount || 0}
       isPro={false}
     />
   );

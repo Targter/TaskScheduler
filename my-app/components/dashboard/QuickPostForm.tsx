@@ -2369,7 +2369,8 @@ import {
 import { scheduleTask } from "@/app/actions/task-actions";
 import { generatePostContent } from "@/app/actions/ai-actions";
 import Link from "next/link";
-
+import { redis } from "@/lib/redis";
+import { getUsageCountByPlatform } from "@/app/actions/usage-actions";
 // --- Configuration ---
 const TOP_EMOJIS = [
   "😀",
@@ -2396,21 +2397,40 @@ interface QuickPostProps {
   isXConnected: boolean;
   isLinkedinConnected: boolean;
   userImage?: string | null;
-  usageCount: number;
+  // usageCount: number;
   isPro: boolean;
 }
+// instead of this call usage actions
+// async function ab(session: any) {
+//   const twitterKey = `user:${session.user.id}:quota:TWITTER`;
+//   const linkedinKey = `user:${session.user.id}:quota:LINKEDIN`;
 
+//   const [twitterUsage, linkedinUsage] = await Promise.all([
+//     redis.get<number>(twitterKey),
+//     redis.get<number>(linkedinKey),
+//   ]);
+
+//   const usageCount = {
+//     twitter: twitterUsage ?? 0,
+//     linkedin: linkedinUsage ?? 0,
+//   };
+// }
 const getLocalISOString = (date: Date) => {
   const offset = date.getTimezoneOffset() * 60000;
   const localDate = new Date(date.getTime() - offset);
   return localDate.toISOString().slice(0, 16);
 };
 
+const LIMITS = {
+  TWITTER: 10,
+  LINKEDIN: 60,
+};
+
 export default function QuickPostForm({
   isXConnected,
   isLinkedinConnected,
   userImage,
-  usageCount,
+  // usageCount,
   isPro,
 }: QuickPostProps) {
   // --- State ---
@@ -2623,7 +2643,8 @@ export default function QuickPostForm({
   };
 
   const FREE_LIMIT = 10;
-  const isLimitReached = !isPro && usageCount >= FREE_LIMIT;
+  // const isLimitReached = !isPro && usageCount >= FREE_LIMIT;
+  const isLimitReached = false;
   const charCount = content.length;
   const isXSelected = selectedPlatforms.includes("TWITTER");
   const isXLimitExceeded = isXSelected && charCount > 280;
@@ -2668,6 +2689,28 @@ export default function QuickPostForm({
     setIsPending(true);
 
     try {
+      const usageStats = await getUsageCountByPlatform();
+
+      if (selectedPlatforms.includes("TWITTER")) {
+        if (usageStats.twitter >= LIMITS.TWITTER) {
+          triggerError(
+            `X Limit Reached (${LIMITS.TWITTER}/${LIMITS.TWITTER}). Upgrade Plan.`,
+          );
+          setIsPending(false);
+          return;
+        }
+      }
+
+      if (selectedPlatforms.includes("LINKEDIN")) {
+        if (usageStats.linkedin >= LIMITS.LINKEDIN) {
+          triggerError(
+            `LinkedIn Limit Reached (${LIMITS.LINKEDIN}/${LIMITS.LINKEDIN}). Upgrade Plan.`,
+          );
+          setIsPending(false);
+          return;
+        }
+      }
+
       let uploadedUrls: string[] = [];
 
       // 3. Upload Logic - STRICTLY GUARDED
