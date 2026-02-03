@@ -12,9 +12,9 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { revalidatePath } from "next/cache";
-
+import { disconnectPlatform } from "@/app/actions/connections-actions";
 // --- CONFIG ---
+
 const AVAILABLE_PLATFORMS = [
   {
     id: "TWITTER",
@@ -65,18 +65,18 @@ export default async function ConnectionsPage() {
     connections.find((c) => c.platform === platformId);
 
   // 2. SERVER ACTION: Disconnect Logic
-  async function disconnectPlatform(formData: FormData) {
-    "use server";
-    const accountId = formData.get("accountId") as string;
+  // async function disconnectPlatform(formData: FormData) {
+  //   "use server";
+  //   const accountId = formData.get("accountId") as string;
 
-    if (!accountId) return;
+  //   if (!accountId) return;
 
-    await prisma.platformAccount.delete({
-      where: { id: accountId },
-    });
+  //   await prisma.platformAccount.delete({
+  //     where: { id: accountId },
+  //   });
 
-    revalidatePath("/dashboard/connections");
-  }
+  //   revalidatePath("/dashboard/connections");
+  // }
 
   return (
     <div className="max-w-6xl mx-auto  p-2">

@@ -272,30 +272,30 @@ export async function scheduleTask(formData: FormData) {
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
     // 6. Push to QStash
-    // const promises = platforms.map(async (platform) => {
-    //   let workerPath = "";
-    //   if (platform === "TWITTER") {
-    //     workerPath = "/api/workers/twitter";
-    //   } else if (platform === "LINKEDIN") {
-    //     workerPath = "/api/workers/linkedin"; 
-    //   } else if (platform === "WHATSAPP") {
-    //     workerPath = "/api/workers/whatsapp"; 
-    //   } else {
-    //     workerPath = "/api/workers/instagram";
-    //   }
+    const promises = platforms.map(async (platform) => {
+      let workerPath = "";
+      if (platform === "TWITTER") {
+        workerPath = "/api/workers/twitter";
+      } else if (platform === "LINKEDIN") {
+        workerPath = "/api/workers/linkedin"; 
+      } else if (platform === "WHATSAPP") {
+        workerPath = "/api/workers/whatsapp"; 
+      } else {
+        workerPath = "/api/workers/instagram";
+      }
 
-    //   const workerUrl = `${baseUrl}${workerPath}`;
+      const workerUrl = `${baseUrl}${workerPath}`;
 
-    //   return qstash.publishJSON({
-    //     url: workerUrl,
-    //     body: { taskId: task.id, platform },
-    //     notBefore: unixTimestamp, 
-    //     retries: 3,
-    //   });
-    // });
+      return qstash.publishJSON({
+        url: workerUrl,
+        body: { taskId: task.id, platform },
+        notBefore: unixTimestamp, 
+        retries: 3,
+      });
+    });
 
 
-    // await Promise.all(promises);
+    await Promise.all(promises);
 
     // --- FIX START: ROBUST INCREMENT ---
     // We wrap INCR in a try/catch. If the key is corrupted (not an integer),

@@ -2972,6 +2972,7 @@ export default function QuickPostForm({
                       flex-1 sm:flex-none relative flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm 
                       bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:scale-[1.02] transition-transform
                     "
+                    prefetch={false} 
                   >
                     <Lock className="w-3.5 h-3.5" />
                     <span>Upgrade Plan</span>

@@ -39,6 +39,7 @@ export default function ConnectionStatus({
           Network Status
         </h3>
         <Link
+          prefetch={false}
           href="/dashboard/connections"
           className="group flex items-center gap-1.5 text-[10px] font-medium text-zinc-500 hover:text-zinc-300 transition-colors"
         >
@@ -94,6 +95,7 @@ export default function ConnectionStatus({
         {!isAllConnected ? (
           <Link
             href="/dashboard/connections"
+            prefetch={false}
             className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-zinc-800 bg-zinc-900/50 text-zinc-400 text-xs font-medium hover:bg-zinc-800 hover:text-zinc-200 hover:border-zinc-700 transition-all group"
           >
             <div className="p-0.5 bg-zinc-800 rounded group-hover:bg-zinc-700 transition-colors">
@@ -178,6 +180,7 @@ function AccountRow({
           <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
             <Link
               href="/dashboard/connections"
+              prefetch={false}
               className="flex items-center justify-center w-7 h-7 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
               title="Manage Settings"
             >
