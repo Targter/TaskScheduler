@@ -35,7 +35,6 @@ export default async function DashboardLayout({
   //   twitter: twitterUsage ?? 0,
   //   linkedin: linkedinUsage ?? 0,
   // };
-
   const usageCount = await getUsageCountByPlatform();
 
   return (

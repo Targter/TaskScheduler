@@ -83,7 +83,7 @@ export const getCachedDashboardPosts = unstable_cache(
       // Recent Posts List
       prisma.task.findMany({
         where: { userId, status: "PENDING" },
-        orderBy: { scheduledAt: "desc" },
+        orderBy: { scheduledAt: "asc" },
         take: 3,
         include: { executions: { select: { platform: true } } },
       }),

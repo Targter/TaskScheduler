@@ -235,29 +235,24 @@ import {
   Zap,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { getUsageCountByPlatform } from "@/app/actions/usage-actions";
+import { useState } from "react";
 // import { redis } from "@/lib/redis";
 
 // Add usageCount to props
 export default function Sidebar({
   user,
-  // usageStats = { twitter: 0, linkedin: 0 },
+  usageStats = { twitter: 0, linkedin: 0 },
 }: {
   user: any;
-  // usageStats?: {
-  //   twitter: number;
-  //   linkedin: number;
-  // };
+  usageStats?: {
+    twitter: number;
+    linkedin: number;
+  };
 }) {
+  
   const pathname = usePathname();
   const [isScheduleOpen, setIsScheduleOpen] = useState(true);
 
-  const [usageStats, setusageStats] = useState({ twitter: 0, linkedin: 0 });
-
-  useEffect(() => {
-    getUsageCountByPlatform().then(setusageStats);
-  }, []);
   // Calculate Percentage (Cap at 100%)
   // const redisKey = `user:${user.id}:posts`; // Ensure this matches your Server Action key exactly
 
