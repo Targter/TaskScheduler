@@ -138,7 +138,7 @@ export default function LandingPage() {
           </div>
 
           {/* Links */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-10">
             {["Features", "Workflow", "Pricing"].map((item) => (
               <a
                 key={item}
@@ -245,7 +245,7 @@ export default function LandingPage() {
         </div>
       </main>
 
-      <section className="py-32 bg-[#09090b] relative overflow-hidden">
+      <section id='workflow' className="py-25 bg-[#09090b] relative overflow-hidden">
         {/* ambient glow */}
         <div className="pointer-events-none absolute inset-0 flex justify-center">
           <div className="w-175 h-87.5 bg-blue-500/10 blur-[140px] rounded-full" />
