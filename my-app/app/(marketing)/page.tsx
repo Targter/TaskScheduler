@@ -1,6 +1,6 @@
 "use client"
 
-import { useLayoutEffect, useRef } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
@@ -34,146 +34,145 @@ export default function LandingPage() {
   const navInnerRef = useRef<HTMLDivElement>(null)
   const heroRef = useRef<HTMLDivElement>(null)
 
-useLayoutEffect(() => {
-  if (!navInnerRef.current) return
+  useLayoutEffect(() => {
+    if (!navInnerRef.current) return
 
-  const mm = gsap.matchMedia()
-  
+    const mm = gsap.matchMedia()
 
-
-  mm.add("(min-width: 1024px)", () => {
-    gsap.to(navInnerRef.current!, {
-      gap: 10,
-      height: 48,
-      paddingLeft: 250,
-      paddingRight: 250,
-      backgroundColor: "rgba(0,0,0,0.75)",
-      boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
-      ease: "power2.out",
-      scrollTrigger: {
-        start: "top+=40 top",
-        end: "top+=80 top",
-        scrub: 1.5,
-      },
+    mm.add("(min-width: 1024px)", () => {
+      gsap.to(navInnerRef.current!, {
+        scale: 0.94,
+        y: -5,
+        backgroundColor: "rgba(9,9,11,0.85)",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+        ease: "power2.out",
+        scrollTrigger: {
+          start: "top+=60 top",
+          end: "top+=140 top",
+          scrub: 1.2,
+        },
+      })
     })
-  })
 
-  const ctx = gsap.context(() => {
-  const tl = gsap.timeline({
-    defaults: { ease: "power3.out" },
-  })
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        defaults: { ease: "power3.out" },
+      })
 
-  tl.from(".hero-badge", {
-    y: 12,
-    opacity: 0,
-    duration: 0.6,
-  })
-    .from(
-      ".hero-title span",
-      {
-        y: 70,
-        opacity: 0,
-        stagger: 0.14,
-        duration: 0.9,
-      },
-      "-=0.3"
-    )
-    .from(
-      ".hero-desc",
-      {
-        y: 20,
+      tl.from(".hero-badge", {
+        y: 12,
         opacity: 0,
         duration: 0.6,
-      },
-      "-=0.4"
-    )
-    .from(
-      ".hero-actions",
-      {
-        y: 18,
-        opacity: 0,
-        duration: 0.5,
-      },
-      "-=0.3"
-    )
-    .from(
-      ".hero-platforms",
-      {
-        opacity: 0,
-        duration: 0.6,
-      },
-      "-=0.2"
-    )
-}, heroRef)
+      })
+        .from(
+          ".hero-title span",
+          {
+            y: 70,
+            opacity: 0,
+            stagger: 0.14,
+            duration: 0.9,
+          },
+          "-=0.3",
+        )
+        .from(
+          ".hero-desc",
+          {
+            y: 20,
+            opacity: 0,
+            duration: 0.6,
+          },
+          "-=0.4",
+        )
+        .from(
+          ".hero-actions",
+          {
+            y: 18,
+            opacity: 0,
+            duration: 0.5,
+          },
+          "-=0.3",
+        )
+        .from(
+          ".hero-platforms",
+          {
+            opacity: 0,
+            duration: 0.6,
+          },
+          "-=0.2",
+        )
+    }, heroRef)
 
-return () => ctx.revert()
+    return () => ctx.revert()
 
+    return () => mm.revert()
+  }, [])
 
-  return () => mm.revert()
-}, [])
+  const [open, setOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-400 font-sans selection:bg-blue-500/30">
       {/* --- SLIM NAVBAR --- */}
-<nav className="fixed top-4 left-0 right-0 z-50">
-  <div
-    ref={navInnerRef}
-    className="
-      mx-auto max-w-7xl px-6
-      h-14 flex items-center justify-between
-      rounded-2xl
-      bg-black/40 backdrop-blur-xl
-      transition-all duration-300
-    "
-  >
-    {/* Brand */}
-    <div className="flex items-center gap-3">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-black shadow-sm">
-        <Command className="w-4 h-4 stroke-[2.5px]" />
-      </div>
-      <span className="text-xs font-bold uppercase tracking-widest text-white">
-        Schedulr
-      </span>
-    </div>
-
-    {/* Nav links */}
-    <div className="hidden md:flex items-center gap-10">
-      {["Features", "Workflow", "Pricing"].map((item) => (
-        <a
-          key={item}
-          href={`#${item.toLowerCase()}`}
+      <nav className="fixed top-5 left-0 right-0 z-50 pointer-events-none">
+        <div
+          ref={navInnerRef}
           className="
-            relative text-[11px] font-semibold uppercase tracking-widest
-            text-zinc-400 hover:text-white transition
-            after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0
-            after:bg-blue-500 after:transition-all after:duration-300
-            hover:after:w-full
+            pointer-events-auto
+            mx-auto max-w-6xl
+            h-12 px-6
+            flex items-center justify-between
+            rounded-full
+            bg-zinc-900/70 backdrop-blur-xl
+            ring-1 ring-white/10
+            shadow-lg shadow-black/40
+            transition-colors duration-300
           "
         >
-          {item}
-        </a>
-      ))}
-    </div>
+          {/* Brand */}
+          <div className="flex items-center gap-3">
+            <div className="h-7 w-7 rounded-md bg-white text-black flex items-center justify-center">
+              <Command className="w-4 h-4 stroke-[2.5px]" />
+            </div>
+            <span className="text-[11px] font-bold uppercase tracking-widest text-white">
+              Schedulr
+            </span>
+          </div>
 
-    {/* CTA */}
-    <Link
-      href="/dashboard"
-      className="
-        group flex items-center gap-2
-        px-4 py-2 rounded-xl
-        text-[11px] font-bold uppercase tracking-widest
-        bg-white text-black
-        hover:bg-zinc-200
-        transition-all duration-200
-        active:scale-[0.97]
-      "
-    >
-      Get Started
-      <ArrowUpRight className="w-3 h-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-    </Link>
-  </div>
-</nav>
+          {/* Links */}
+          <div className="hidden md:flex items-center gap-8">
+            {["Features", "Workflow", "Pricing"].map((item) => (
+              <a
+                key={item}
+                href={`#${item.toLowerCase()}`}
+                className="
+                  text-[11px] font-medium uppercase tracking-widest
+                  text-zinc-400
+                  hover:text-white
+                  transition-colors
+                "
+              >
+                {item}
+              </a>
+            ))}
+          </div>
 
+          {/* CTA */}
+          <Link
+            href="/dashboard"
+            className="
+              h-8 px-4
+              flex items-center
+              rounded-full
+              bg-blue-600 text-white
+              text-[10px] font-bold uppercase tracking-widest
+              hover:bg-blue-500
+              transition
+              active:scale-[0.96]
+            "
+          >
+            Open App
+          </Link>
+        </div>
+      </nav>
 
       <main className="lg:pt-44 pt-24 lg:pb-24 relative overflow-hidden">
         {/* glow */}
@@ -199,13 +198,15 @@ return () => ctx.revert()
           {/* headline */}
           <h1 className="hero-title text-4xl md:text-6xl font-extrabold tracking-tighter text-white mb-6 leading-[1.05]">
             <span className="block">Build Your Posting Pipeline.</span>
-            <span className="block text-zinc-500">We’ll Handle the Timing.</span>
+            <span className="block text-zinc-500">
+              We’ll Handle the Timing.
+            </span>
           </h1>
 
           {/* description */}
           <p className="hero-desc text-sm md:text-base text-zinc-500 mb-10 max-w-xl mx-auto leading-relaxed">
-            Schedule and queue tweets and LinkedIn posts by date.
-            Maintain a consistent posting rhythm without logging in every time.
+            Schedule and queue tweets and LinkedIn posts by date. Maintain a
+            consistent posting rhythm without logging in every time.
           </p>
 
           {/* actions */}
@@ -244,10 +245,92 @@ return () => ctx.revert()
         </div>
       </main>
 
+      <section className="py-32 bg-[#09090b] relative overflow-hidden">
+        {/* ambient glow */}
+        <div className="pointer-events-none absolute inset-0 flex justify-center">
+          <div className="w-175 h-87.5 bg-blue-500/10 blur-[140px] rounded-full" />
+        </div>
 
-      <section id="features" className="py-32 bg-[#09090b] overflow-hidden">
+        <div className="relative max-w-6xl mx-auto px-6">
+          {/* context */}
+          <div className="mb-14 text-center">
+            <p className="text-xs uppercase tracking-[0.4em] text-zinc-500 mb-4">
+              Live System Preview
+            </p>
+            <h3 className="text-2xl md:text-3xl font-semibold text-white">
+              See the scheduler doing real work
+            </h3>
+            <p className="mt-3 text-sm text-zinc-500 max-w-xl mx-auto">
+              This is not a mockup. Every action you see here is part of the actual scheduling pipeline.
+            </p>
+          </div>
+
+          {/* video frame */}
+          <div className="group relative rounded-3xl overflow-hidden border border-white/10 bg-zinc-900/70 shadow-2xl shadow-black/70">
+
+            {/* chrome */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-black/40">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
+              </div>
+
+              <span className="text-[10px] uppercase tracking-widest text-zinc-500 opacity-0 group-hover:opacity-100 transition">
+                Click to expand
+              </span>
+            </div>
+
+            {/* video */}
+            <div className="relative">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-[1.015]"
+                onClick={() => setOpen(true)}
+              >
+                <source src="/preview.mp4" type="video/mp4" />
+              </video>
+
+              {/* play overlay */}
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="opacity-0 group-hover:opacity-100 transition">
+                  <div className="h-14 w-14 rounded-full bg-black/60 backdrop-blur flex items-center justify-center border border-white/10">
+                    <span className="ml-1 text-white text-xl">▶</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* trust line */}
+          <p className="mt-10 text-center text-sm text-zinc-500">
+            Real queues. Real execution. Logged in real time.
+          </p>
+        </div>
+
+        {/* fullscreen modal */}
+        {open && (
+          <div
+            className="fixed inset-0 z-100 bg-black/80 backdrop-blur-sm flex items-center justify-center px-6"
+            onClick={() => setOpen(false)}
+          >
+            <video
+              controls
+              autoPlay
+              className="max-w-5xl w-full rounded-2xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <source src="/preview.mp4" type="video/mp4" />
+            </video>
+          </div>
+        )}
+      </section>
+
+      <section id="features" className="py-25 bg-[#09090b] overflow-hidden">
         <div className="max-w-6xl mx-auto px-6">
-
           {/* Header */}
           <div className="mb-20 max-w-2xl">
             <p className="text-xs font-bold uppercase tracking-[0.4em] text-zinc-500 mb-4">
@@ -257,8 +340,8 @@ return () => ctx.revert()
               A scheduling system, not a posting tool
             </h2>
             <p className="mt-5 text-base text-zinc-500">
-              Each feature removes a decision. What to post, when to post, and where —
-              handled once, executed automatically.
+              Each feature removes a decision. What to post, when to post, and
+              where — handled once, executed automatically.
             </p>
           </div>
 
@@ -331,10 +414,8 @@ return () => ctx.revert()
         </div>
       </section>
 
-
-      <section className="py-28 bg-[#09090b] relative overflow-hidden">
+      <section className="py-25 bg-[#09090b] relative overflow-hidden">
         <div className="max-w-6xl mx-auto px-6">
-          
           {/* Header */}
           <div className="mb-16 text-center">
             <p className="text-xs uppercase tracking-[0.35em] text-zinc-500 mb-4">
@@ -344,13 +425,13 @@ return () => ctx.revert()
               Your content runs on a schedule — not reminders
             </h3>
             <p className="mt-4 text-base text-zinc-500 max-w-xl mx-auto">
-              Every post enters a pipeline, waits its turn, and publishes exactly when scheduled.
+              Every post enters a pipeline, waits its turn, and publishes
+              exactly when scheduled.
             </p>
           </div>
 
           {/* Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
             {/* Queue Status */}
             <div className="group relative rounded-2xl border border-white/5 bg-zinc-900/40 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-white/10">
               <div className="absolute inset-0 rounded-2xl bg-white/5 opacity-0 group-hover:opacity-100 transition pointer-events-none" />
@@ -412,14 +493,12 @@ return () => ctx.revert()
                 </span>
               </p>
             </div>
-
           </div>
         </div>
       </section>
 
-      <section id="pricing" className="py-32 bg-[#09090b]">
+      <section id="pricing" className="py-25 bg-[#09090b]">
         <div className="max-w-6xl mx-auto px-6">
-          
           {/* header */}
           <div className="text-center mb-24">
             <h2 className="text-xs font-semibold uppercase tracking-[0.4em] text-zinc-500 mb-4">
@@ -435,7 +514,6 @@ return () => ctx.revert()
 
           {/* pricing layout */}
           <div className="relative grid grid-cols-1 md:grid-cols-3 gap-12 items-end">
-
             {/* Starter */}
             <div className="opacity-80 hover:opacity-100 transition">
               <div className="p-8 rounded-2xl bg-zinc-900/40 flex flex-col h-full">
@@ -444,9 +522,7 @@ return () => ctx.revert()
                     Starter
                   </p>
                   <p className="text-4xl font-semibold text-white mb-1">$0</p>
-                  <p className="text-sm text-zinc-500">
-                    For trying things out
-                  </p>
+                  <p className="text-sm text-zinc-500">For trying things out</p>
                 </div>
 
                 <ul className="space-y-4 text-sm text-zinc-400 mb-10">
@@ -523,15 +599,12 @@ return () => ctx.revert()
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
-
-      <section className="py-32 bg-zinc-950 relative overflow-hidden">
+      <section className="py-25 bg-zinc-950 relative overflow-hidden">
         <div className="max-w-6xl mx-auto px-6">
-
           {/* Header */}
           <div className="mb-16">
             <p className="text-xs uppercase tracking-[0.35em] text-zinc-400 mb-4">
@@ -541,14 +614,13 @@ return () => ctx.revert()
               Built like infrastructure, not a reminder app
             </h3>
             <p className="mt-4 text-base text-zinc-400 max-w-2xl">
-              Schedulr behaves like a delivery system — posts move through states,
-              get validated, executed, and logged.
+              Schedulr behaves like a delivery system — posts move through
+              states, get validated, executed, and logged.
             </p>
           </div>
 
           {/* Panel */}
           <div className="rounded-3xl bg-zinc-900/70 border border-white/10 backdrop-blur-md overflow-hidden">
-
             {/* Desktop header */}
             <div className="hidden md:grid grid-cols-3 px-8 py-5 border-b border-white/10 text-[11px] uppercase tracking-widest text-zinc-400">
               <span>Component</span>
@@ -559,9 +631,7 @@ return () => ctx.revert()
             {/* Item */}
             <div className="px-6 md:px-8 py-6 border-b border-white/5">
               <div className="md:grid md:grid-cols-3 md:gap-4">
-                <div className="text-white font-medium">
-                  Scheduling Engine
-                </div>
+                <div className="text-white font-medium">Scheduling Engine</div>
                 <div className="mt-1 md:mt-0 text-emerald-400 font-medium">
                   Operational
                 </div>
@@ -573,9 +643,7 @@ return () => ctx.revert()
 
             <div className="px-6 md:px-8 py-6 border-b border-white/5">
               <div className="md:grid md:grid-cols-3 md:gap-4">
-                <div className="text-white font-medium">
-                  Post Queue
-                </div>
+                <div className="text-white font-medium">Post Queue</div>
                 <div className="mt-1 md:mt-0 text-emerald-400 font-medium">
                   Stable
                 </div>
@@ -587,9 +655,7 @@ return () => ctx.revert()
 
             <div className="px-6 md:px-8 py-6 border-b border-white/5">
               <div className="md:grid md:grid-cols-3 md:gap-4">
-                <div className="text-white font-medium">
-                  Delivery Workers
-                </div>
+                <div className="text-white font-medium">Delivery Workers</div>
                 <div className="mt-1 md:mt-0 text-emerald-400 font-medium">
                   Running
                 </div>
@@ -601,9 +667,7 @@ return () => ctx.revert()
 
             <div className="px-6 md:px-8 py-6">
               <div className="md:grid md:grid-cols-3 md:gap-4">
-                <div className="text-white font-medium">
-                  Audit Logs
-                </div>
+                <div className="text-white font-medium">Audit Logs</div>
                 <div className="mt-1 md:mt-0 text-blue-400 font-medium">
                   Recording
                 </div>
@@ -612,26 +676,21 @@ return () => ctx.revert()
                 </div>
               </div>
             </div>
-
           </div>
 
           {/* Footer line */}
-          <div className="mt-12">
+          <div className="mt-8">
             <p className="text-sm text-zinc-400">
               This is why posts go out even when you’re offline.
             </p>
           </div>
-
         </div>
       </section>
 
-
       <footer className="border-t border-white/5 bg-black">
-        <div className="max-w-7xl mx-auto px-6 py-14">
-
+        <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Top row */}
           <div className="flex flex-col md:flex-row justify-between gap-10">
-
             {/* Brand */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3">
@@ -645,25 +704,34 @@ return () => ctx.revert()
               </div>
 
               <p className="text-sm text-zinc-500 max-w-xs">
-                A scheduling system for creators who value consistency over reminders.
+                A scheduling system for creators who value consistency over
+                reminders.
               </p>
             </div>
 
             {/* Links */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-10 text-sm">
-
               {/* Product */}
               <div className="flex flex-col gap-3">
                 <p className="text-[10px] uppercase tracking-widest text-zinc-600">
                   Product
                 </p>
-                <a href="#features" className="text-zinc-400 hover:text-white transition">
+                <a
+                  href="#features"
+                  className="text-zinc-400 hover:text-white transition"
+                >
                   Features
                 </a>
-                <a href="#pricing" className="text-zinc-400 hover:text-white transition">
+                <a
+                  href="#pricing"
+                  className="text-zinc-400 hover:text-white transition"
+                >
                   Pricing
                 </a>
-                <a href="/dashboard" className="text-zinc-400 hover:text-white transition">
+                <a
+                  href="/dashboard"
+                  className="text-zinc-400 hover:text-white transition"
+                >
                   Dashboard
                 </a>
               </div>
@@ -673,13 +741,22 @@ return () => ctx.revert()
                 <p className="text-[10px] uppercase tracking-widest text-zinc-600">
                   Legal
                 </p>
-                <a href="#" className="text-zinc-400 hover:text-white transition">
+                <a
+                  href="#"
+                  className="text-zinc-400 hover:text-white transition"
+                >
                   Privacy Policy
                 </a>
-                <a href="#" className="text-zinc-400 hover:text-white transition">
+                <a
+                  href="#"
+                  className="text-zinc-400 hover:text-white transition"
+                >
                   Terms of Service
                 </a>
-                <a href="#" className="text-zinc-400 hover:text-white transition">
+                <a
+                  href="#"
+                  className="text-zinc-400 hover:text-white transition"
+                >
                   Security
                 </a>
               </div>
@@ -695,11 +772,13 @@ return () => ctx.revert()
                 >
                   abhaybansal@.com
                 </a>
-                <a href="#" className="text-zinc-400 hover:text-white transition">
+                <a
+                  href="#"
+                  className="text-zinc-400 hover:text-white transition"
+                >
                   System Status
                 </a>
               </div>
-
             </div>
           </div>
 
@@ -713,14 +792,11 @@ return () => ctx.revert()
               Built for creators · Designed for reliability
             </p>
           </div>
-
         </div>
       </footer>
-
     </div>
   )
 }
-
 
 function FeatureSlide({
   icon,
@@ -735,21 +811,16 @@ function FeatureSlide({
 }) {
   return (
     <div className="h-full rounded-2xl bg-[#0b0b10] border border-white/5 p-8 transition-all duration-300 hover:border-blue-500/30 hover:-translate-y-1">
-
       {/* Icon */}
       <div className="mb-6 flex h-8 w-16 lg:h-10 lg:w-10 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
         {icon}
       </div>
 
       {/* Title */}
-      <h3 className="text-2xl font-semibold text-white mb-3">
-        {title}
-      </h3>
+      <h3 className="text-2xl font-semibold text-white mb-3">{title}</h3>
 
       {/* Main description */}
-      <p className="text-sm text-zinc-400 leading-relaxed mb-4">
-        {desc}
-      </p>
+      <p className="text-sm text-zinc-400 leading-relaxed mb-4">{desc}</p>
 
       {/* Supporting line */}
       <p className="text-xs uppercase tracking-widest text-blue-400/80">
@@ -758,7 +829,6 @@ function FeatureSlide({
     </div>
   )
 }
-
 
 function PricingCard({ tier, price, features, highlight = false }: any) {
   return (
@@ -793,10 +863,7 @@ function PricingCard({ tier, price, features, highlight = false }: any) {
       {/* Features */}
       <ul className="space-y-4 mb-10">
         {features.map((f: string) => (
-          <li
-            key={f}
-            className="flex items-start gap-3 text-sm text-zinc-400"
-          >
+          <li key={f} className="flex items-start gap-3 text-sm text-zinc-400">
             <CheckCircle2
               size={14}
               className={highlight ? "text-blue-400" : "text-zinc-600"}
