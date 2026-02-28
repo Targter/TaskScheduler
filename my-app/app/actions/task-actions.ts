@@ -291,6 +291,7 @@ export async function scheduleTask(formData: FormData) {
         body: { taskId: task.id, platform },
         notBefore: unixTimestamp, 
         retries: 3,
+        delay:"180s"
       });
     });
 

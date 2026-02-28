@@ -609,6 +609,7 @@ async function postTweetWithRetry(
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
           "User-Agent": "TaskSchedulerWorker/1.0",
+          "Accept": "application/json",
         },
         body: JSON.stringify({ text }),
       }
@@ -761,8 +762,8 @@ async function handler(req: Request) {
     //     throw new Error(JSON.stringify(errData));
     // }
     await postTweetWithRetry(
-  accessToken,
-  task.content
+    accessToken,
+    task.content
 );
 
     // 6. Success Transaction
