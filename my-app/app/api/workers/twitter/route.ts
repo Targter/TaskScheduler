@@ -583,7 +583,8 @@
 
 // this is in starting with and without media configurationos
 
-
+// 
+export const runtime = "nodejs";
 
 import { verifySignatureAppRouter } from "@upstash/qstash/dist/nextjs";
 import { prisma } from "@/lib/db";
