@@ -52,19 +52,59 @@ export async function GET(req: NextRequest) {
     }
 
     // 3. Fetch User's Twitter ID (We need this for the 'externalId' field)
-    const userResponse = await fetch("https://api.twitter.com/2/users/me", {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` ,"User-Agent": "TaskSchedulerApp/1.0",},
-    });
-    console.log("USER RESPONSE STATUS:", userResponse.status);
-    console.log("userresponse:",userResponse)
-    const userData = await userResponse.json();
-    console.log("USER RESPONSE:", userData);
+    // const userResponse = await fetch("https://api.twitter.com/2/users/me", {
+    //   headers: { Authorization: `Bearer ${tokenData.access_token}` ,"User-Agent": "TaskSchedulerApp/1.0",},
+    // });
 
-    if (!userData.data) {
-        return new Response("Failed to fetch Twitter user data", { status: 400 });
+
+
+    // console.log("USER RESPONSE STATUS:", userResponse.status);
+    // console.log("userresponse:",userResponse)
+    // const userData = await userResponse.json();
+    // console.log("USER RESPONSE:", userData);
+
+    // if (!userData.data) {
+    //     return new Response("Failed to fetch Twitter user data", { status: 400 });
+    // }
+
+    let twitterId: string;
+
+try {
+
+  const userResponse = await fetch(
+    "https://api.twitter.com/2/users/me",
+    {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+        "User-Agent": "TaskSchedulerApp/1.0",
+      },
     }
+  );
 
-    const twitterId = userData.data.id;
+  const userData = await userResponse.json();
+
+  console.log("USER RESPONSE:", userResponse.status, userData);
+
+  if (userResponse.ok && userData?.data?.id) {
+    twitterId = userData.data.id;
+  } else {
+    throw new Error("Twitter temporary failure");
+  }
+
+} catch (err) {
+
+  console.warn(
+    "Twitter users/me unavailable — continuing OAuth"
+  );
+
+  /**
+   * OAuth already succeeded.
+   * Create temporary id.
+   */
+  twitterId = `pending-${Date.now()}`;
+}
+
+    // const twitterId = userData.data.id;
 
     // 4. Encrypt & Save to DB
     await prisma.platformAccount.upsert({
