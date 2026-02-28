@@ -21,9 +21,9 @@ export async function GET(req: NextRequest) {
   const basicAuth = Buffer.from(
     `${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`
   ).toString("base64");
-//   console.log("Twiclid:",process.env.TWITTER_CLIENT_ID)
-//   console.log("Twiclid:",process.env.TWITTER_CLIENT_SECRET)
-//   console.log("basicauth:",basicAuth)
+  console.log("Twiclid:",process.env.TWITTER_CLIENT_ID)
+  console.log("Twiclid:",process.env.TWITTER_CLIENT_SECRET)
+  console.log("basicauth:",basicAuth)
   try {
     const tokenResponse = await fetch("https://api.twitter.com/2/oauth2/token", {
       method: "POST",
@@ -38,10 +38,10 @@ export async function GET(req: NextRequest) {
         code_verifier: "challenge", // Must match the one sent in step 4
       }),
     });
-    // console.log("tokenREponse:oautcallback",tokenResponse)
+    console.log("tokenREponse:oautcallback",tokenResponse)
 
     const tokenData = await tokenResponse.json();
-    // console.log("oautcallback",tokenData)
+    console.log("oautcallback",tokenData)
 
     if (!tokenResponse.ok) {
       console.error("Twitter Token Error:", tokenData);
