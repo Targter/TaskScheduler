@@ -2623,6 +2623,7 @@ export default function QuickPostForm({
     try {
       let platform: "TWITTER" | "LINKEDIN" | "GENERAL" = "GENERAL";
       if (selectedPlatforms.includes("TWITTER")) {
+        alert("X Not Available right now");
         platform = "TWITTER";
       } else if (selectedPlatforms.includes("LINKEDIN")) {
         platform = "LINKEDIN";
@@ -2858,14 +2859,15 @@ export default function QuickPostForm({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center flex-wrap gap-2">
-                  <PlatformToggle
+                  {/* <PlatformToggle
                     icon={<Twitter className="w-3.5 h-3.5" />}
                     label="X"
+                    disabled={true}
                     isConnected={isXConnected}
                     isActive={selectedPlatforms.includes("TWITTER")}
-                    onClick={() => togglePlatform("TWITTER", isXConnected)}
+                    // onClick={() => togglePlatform("TWITTER", isXConnected)}
                     activeColor="bg-white text-black border-white"
-                  />
+                  /> */}
                   <PlatformToggle
                     icon={<Linkedin className="w-3.5 h-3.5" />}
                     label="LinkedIn"
@@ -2972,7 +2974,7 @@ export default function QuickPostForm({
                       flex-1 sm:flex-none relative flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm 
                       bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:scale-[1.02] transition-transform
                     "
-                    prefetch={false} 
+                    prefetch={false}
                   >
                     <Lock className="w-3.5 h-3.5" />
                     <span>Upgrade Plan</span>
