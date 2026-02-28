@@ -694,10 +694,11 @@ async function handler(req: Request) {
   
   let accessToken = decrypt(twitterAccount.encryptedAccessToken);
   const now = new Date();
+  console.log("accessToken:",accessToken)
   
   // Check if token is expired (or expires in the next 5 minutes)
   const isExpired = twitterAccount.expiresAt && twitterAccount.expiresAt < new Date(now.getTime() + 5 * 60000);
-
+  console.log("isExpired:",isExpired)
   if (isExpired) {
     console.log("⏳ Access Token expired. Refreshing with Twitter...");
     
