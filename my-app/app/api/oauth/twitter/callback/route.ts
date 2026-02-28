@@ -35,7 +35,10 @@ export async function GET(req: NextRequest) {
         code,
         grant_type: "authorization_code",
         redirect_uri: `${process.env.NEXTAUTH_URL}/api/oauth/twitter/callback`,
-        code_verifier: "challenge", // Must match the one sent in step 4
+        // code_verifier: "challenge", // Must match the one sent in step 4
+         code_verifier:
+            req.cookies.get("twitter_pkce")?.value ||
+            "challenge",
       }),
     });
     console.log("tokenREponse:oautcallback",tokenResponse)
@@ -50,7 +53,7 @@ export async function GET(req: NextRequest) {
 
     // 3. Fetch User's Twitter ID (We need this for the 'externalId' field)
     const userResponse = await fetch("https://api.twitter.com/2/users/me", {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      headers: { Authorization: `Bearer ${tokenData.access_token}` ,"User-Agent": "TaskSchedulerApp/1.0",},
     });
     console.log("USER RESPONSE STATUS:", userResponse.status);
     console.log("userresponse:",userResponse)
