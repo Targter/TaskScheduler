@@ -591,6 +591,54 @@ import { decrypt, encrypt } from "@/lib/crypto"; // <--- IMPORT ENCRYPT
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 
+
+async function postTweetWithRetry(
+  accessToken: string,
+  text: string
+) {
+
+  const MAX_RETRIES = 5;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+
+    const res = await fetch(
+      "https://api.twitter.com/2/tweets",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          "User-Agent": "TaskSchedulerWorker/1.0",
+        },
+        body: JSON.stringify({ text }),
+      }
+    );
+
+    const data = await res.json();
+
+    console.log(
+      `Tweet attempt ${attempt}`,
+      res.status,
+      data
+    );
+
+    if (res.ok) return data;
+
+    // ✅ retryable twitter infra errors
+    if ([503,502,429].includes(res.status)) {
+      await new Promise(r =>
+        setTimeout(r, 2000 * attempt)
+      );
+      continue;
+    }
+
+    throw new Error(JSON.stringify(data));
+  }
+
+  throw new Error("Twitter unavailable after retries");
+}
+
+
 async function handler(req: Request) {
   const body = await req.json();
   const { taskId } = body;
@@ -698,20 +746,24 @@ async function handler(req: Request) {
 
   // 5. Post to Twitter
   try {
-    const response = await fetch("https://api.twitter.com/2/tweets", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ text: task.content }),
-    });
+    // const response = await fetch("https://api.twitter.com/2/tweets", {
+    //   method: "POST",
+    //   headers: {
+    //     Authorization: `Bearer ${accessToken}`,
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify({ text: task.content }),
+    // });
 
-    if (!response.ok) {
-        const errData = await response.json();
-        console.error("Twitter API Error:", errData);
-        throw new Error(JSON.stringify(errData));
-    }
+    // if (!response.ok) {
+    //     const errData = await response.json();
+    //     console.error("Twitter API Error:", errData);
+    //     throw new Error(JSON.stringify(errData));
+    // }
+    await postTweetWithRetry(
+  accessToken,
+  task.content
+);
 
     // 6. Success Transaction
     await prisma.$transaction([
