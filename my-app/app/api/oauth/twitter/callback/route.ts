@@ -14,6 +14,8 @@ export async function GET(req: NextRequest) {
 
   if (!code) return new Response("No code provided", { status: 400 });
 
+
+  
   // 2. Exchange Code for Access Token
   // Twitter requires Basic Auth header with Client ID:Secret
   const basicAuth = Buffer.from(
@@ -50,8 +52,11 @@ export async function GET(req: NextRequest) {
     const userResponse = await fetch("https://api.twitter.com/2/users/me", {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
+    console.log("USER RESPONSE STATUS:", userResponse.status);
+    console.log("userresponse:",userResponse)
     const userData = await userResponse.json();
-    
+    console.log("USER RESPONSE:", userData);
+
     if (!userData.data) {
         return new Response("Failed to fetch Twitter user data", { status: 400 });
     }
